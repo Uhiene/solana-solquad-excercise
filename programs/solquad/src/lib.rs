@@ -6,6 +6,11 @@ declare_id!("5sFUqUTjAMJARrEafMX8f4J1LagdUQ9Y8TR8HwGNHkU8");
 pub mod solquad {
     use super::*;
 
+    pub struct Project {
+        pub pool: Option<Pubkey>, 
+    }
+    
+
     pub fn initialize_escrow(ctx: Context<InitializeEscrow>, amount: u64) -> Result<()> {
         let escrow_account = &mut ctx.accounts.escrow_account;
         escrow_account.escrow_creator = ctx.accounts.escrow_signer.key();
@@ -32,6 +37,7 @@ pub mod solquad {
         project_account.votes_count = 0;
         project_account.voter_amount = 0;
         project_account.distributed_amt = 0;
+        project_account.pool = None;
 
         Ok(())
     }
@@ -41,14 +47,16 @@ pub mod solquad {
         let pool_account = &mut ctx.accounts.pool_account;
         let project_account = &ctx.accounts.project_account;
 
-        pool_account.projects.push(
-            project_account.project_owner
-        );
+        if let Some(_) = project_account.pool {
+            return Err(ErrorCode::ProjectAlreadyInPool.into());
+        }
+
+        project_account.pool = Some(pool_account.key());
+
+        pool_account.projects.push(project_account.key());
         pool_account.total_projects += 1;
 
-        escrow_account.project_reciever_addresses.push(
-            project_account.project_owner
-        );
+        escrow_account.project_reciever_addresses.push(project_account.project_owner);
 
         Ok(())
     }
@@ -96,6 +104,8 @@ pub mod solquad {
 
         Ok(())
     }
+
+    
 }
 
 #[derive(Accounts)]
@@ -210,4 +220,16 @@ pub struct Voter {
     pub voter: Pubkey,
     pub voted_for: Pubkey,
     pub token_amount: u64
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("Project is already in a pool.")]
+    ProjectAlreadyInPool,
+    #[msg("Division by zero.")]
+    DivisionByZero,
+    #[msg("Arithmetic overflow.")]
+    Overflow,
+    #[msg("Total distributed amount does not match the deposited amount.")]
+    MismatchTotalDistributed,
 }

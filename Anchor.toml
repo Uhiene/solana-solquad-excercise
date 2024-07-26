@@ -1,6 +1,8 @@
 [features]
+cluster = "devnet"
 seeds = false
 skip-lint = false
+
 [programs.localnet]
 solquad = "5sFUqUTjAMJARrEafMX8f4J1LagdUQ9Y8TR8HwGNHkU8"
 
